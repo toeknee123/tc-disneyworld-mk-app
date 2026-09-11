@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#fbf8f3">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
 <title>Magic Kingdom 2026</title>
 <style>
   :root{
@@ -142,9 +145,31 @@ const RIDES = [
   {n:"Country Bear Musical Jamboree", u:"country-bear-musical-jamboree", l:'frontier', t:'show', note:'Short, silly, air conditioned'},
 ];
 
-let land = null, type = null, byType = false, q = '', llOnly = false;
-document.getElementById('q').addEventListener('input', e=>{ q = e.target.value.trim().toLowerCase(); render(); });
-const done = new Set();
+const STORAGE_KEY = 'mk2026';
+function loadState(){
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch (e) { return null; }
+}
+function saveState(){
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      done: Array.from(done), land, type, byType, llOnly, q,
+    }));
+  } catch (e) { /* storage unavailable (private mode, quota, etc) - ignore */ }
+}
+const saved = loadState() || {};
+function rideKey(r){ return r.u + '|' + r.n; }
+
+let land = saved.land ?? null, type = saved.type ?? null, byType = !!saved.byType,
+    q = saved.q || '', llOnly = !!saved.llOnly;
+const done = new Set(Array.isArray(saved.done) ? saved.done : []);
+
+const qEl = document.getElementById('q');
+qEl.value = q;
+qEl.addEventListener('input', e=>{ q = e.target.value.trim().toLowerCase(); saveState(); render(); });
 
 function chip(id, label, color, cls, on){
   const b = document.createElement('button');
@@ -155,13 +180,13 @@ function chip(id, label, color, cls, on){
   b.onclick = on; return b;
 }
 const landsEl = document.getElementById('lands'), typesEl = document.getElementById('types');
-landsEl.appendChild(chip('', 'All lands', null, '', ()=>{land=null;render();}));
-for (const [k,v] of Object.entries(LANDS)) landsEl.appendChild(chip(k, v.name, v.c, '', ()=>{land = land===k?null:k; render();}));
-typesEl.appendChild(chip('', 'All types', null, 'type', ()=>{type=null;render();}));
-for (const [k,v] of Object.entries(TYPES)) typesEl.appendChild(chip(k, v, null, 'type', ()=>{type = type===k?null:k; render();}));
-const llChip = chip('ll', 'Lightning Lane', '#0b3f8a', 'll', ()=>{llOnly=!llOnly; render();});
+landsEl.appendChild(chip('', 'All lands', null, '', ()=>{land=null;saveState();render();}));
+for (const [k,v] of Object.entries(LANDS)) landsEl.appendChild(chip(k, v.name, v.c, '', ()=>{land = land===k?null:k; saveState(); render();}));
+typesEl.appendChild(chip('', 'All types', null, 'type', ()=>{type=null;saveState();render();}));
+for (const [k,v] of Object.entries(TYPES)) typesEl.appendChild(chip(k, v, null, 'type', ()=>{type = type===k?null:k; saveState(); render();}));
+const llChip = chip('ll', 'Lightning Lane', '#0b3f8a', 'll', ()=>{llOnly=!llOnly; saveState(); render();});
 typesEl.appendChild(llChip);
-document.getElementById('grp').onclick = ()=>{byType=!byType;render();};
+document.getElementById('grp').onclick = ()=>{byType=!byType;saveState();render();};
 
 function tagHtml(r){
   const t=[];
@@ -173,10 +198,11 @@ function tagHtml(r){
   return `<div class="tags">${t.join('')}</div>`;
 }
 function rideHtml(r,i){
-  return `<div class="ride${done.has(i)?' done':''}" style="--c:${LANDS[r.l].c}">
+  const isDone = done.has(rideKey(r));
+  return `<div class="ride${isDone?' done':''}" style="--c:${LANDS[r.l].c}">
     <div class="bar"></div>
     <div class="body"><div class="name">${r.n}</div>${r.note?`<div class="note">${r.note}</div>`:''}${tagHtml(r)}</div>
-    <div class="side"><a class="map" href="https://disneyworld.disney.go.com/attractions/magic-kingdom/${r.u}/" target="_blank" rel="noopener" aria-label="Open ${r.n} in Disney map">Map</a><label><input type="checkbox" data-i="${i}" ${done.has(i)?'checked':''} aria-label="Done: ${r.n}"></label></div>
+    <div class="side"><a class="map" href="https://disneyworld.disney.go.com/attractions/magic-kingdom/${r.u}/" target="_blank" rel="noopener" aria-label="Open ${r.n} in Disney map">Map</a><label><input type="checkbox" data-i="${i}" ${isDone?'checked':''} aria-label="Done: ${r.n}"></label></div>
   </div>`;
 }
 function render(){
@@ -195,13 +221,22 @@ function render(){
     html += `<section><h2>${dot}${label} <span class="n">${g.length}</span></h2>${g.map(({r,i})=>rideHtml(r,i)).join('')}</section>`;
   }
   document.getElementById('list').innerHTML = html || '<p class="empty">Nothing matches those filters.</p>';
-  const d = items.filter(({i})=>done.has(i)).length;
+  const d = items.filter(({r})=>done.has(rideKey(r))).length;
   document.getElementById('count').textContent = `${items.length} rides, ${d} done`;
   document.querySelectorAll('.ride input').forEach(cb=>cb.onchange = e=>{
-    const i=+e.target.dataset.i; e.target.checked?done.add(i):done.delete(i); render();
+    const i=+e.target.dataset.i; const key=rideKey(RIDES[i]);
+    e.target.checked?done.add(key):done.delete(key); saveState(); render();
   });
 }
 render();
+
+if ('serviceWorker' in navigator) {
+  try {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js').catch(()=>{});
+    });
+  } catch (e) { /* ignore - offline support is a bonus, not required */ }
+}
 </script>
 </body>
 </html>
