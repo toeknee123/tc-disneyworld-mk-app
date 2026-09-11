@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Magic Kingdom 2026</title>
+<style>
+  :root{
+    --ink:#1d1a17; --muted:#6f6760; --paper:#fbf8f3; --line:#e6dfd6;
+    --frontier:#783F04; --fantasy:#E0009C; --tomorrow:#2F6FD6;
+    --adventure:#38761D; --liberty:#E38800; --mainst:#D81E1E;
+    font-size:17px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--paper);color:var(--ink);
+    font-family:-apple-system,"SF Pro Text",system-ui,Segoe UI,Roboto,sans-serif;
+    -webkit-text-size-adjust:100%}
+  header{padding:calc(14px + env(safe-area-inset-top)) 16px 10px;
+    background:var(--paper);position:sticky;top:0;z-index:5;border-bottom:1px solid var(--line)}
+  h1{margin:0 0 10px;font-size:1.35rem;letter-spacing:-.01em;font-weight:700}
+  h1 small{display:block;font-weight:400;font-size:.85rem;color:var(--muted);margin-top:2px}
+  #q{width:100%;font:inherit;font-size:1rem;padding:9px 12px;border:1.5px solid var(--line);border-radius:10px;
+    background:#fff;color:var(--ink);margin-bottom:8px;-webkit-appearance:none}
+  #q:focus{outline:none;border-color:var(--tomorrow)}
+  .row{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;scrollbar-width:none}
+  .row::-webkit-scrollbar{display:none}
+  .chip{flex:0 0 auto;border:2px solid var(--c,var(--line));background:#fff;color:var(--c,var(--ink));
+    border-radius:999px;padding:7px 13px;font-size:.9rem;font-weight:600;white-space:nowrap;cursor:pointer}
+  .chip[aria-pressed=true]{background:var(--c,var(--ink));color:#fff}
+  .chip.type{--c:#3a342f;border-width:1.5px;font-weight:500}
+  .chip.type[aria-pressed=true]{background:#3a342f;color:#fff}
+  .chip.ll{background:#dbeeff;border-color:#0b3f8a;color:#0b3f8a}
+  .chip.ll[aria-pressed=true]{background:#0b3f8a;color:#fff}
+  .chip:focus-visible{outline:3px solid #000;outline-offset:2px}
+  .tools{display:flex;justify-content:space-between;align-items:center;margin-top:6px;font-size:.85rem;color:var(--muted)}
+  .tools button{background:none;border:0;color:var(--tomorrow);font:inherit;font-weight:600;padding:4px 0;cursor:pointer}
+  main{padding:8px 12px calc(40px + env(safe-area-inset-bottom))}
+  section{margin:14px 0 22px}
+  h2{margin:0 0 6px 4px;font-size:1rem;font-weight:700;display:flex;align-items:center;gap:8px}
+  h2 .dot{width:12px;height:12px;border-radius:50%;background:var(--c);display:inline-block}
+  h2 .n{color:var(--muted);font-weight:500;font-size:.85rem}
+  .ride{display:grid;grid-template-columns:6px 1fr auto;gap:0 12px;background:#fff;border-radius:10px;
+    margin-bottom:6px;overflow:hidden;border:1px solid var(--line)}
+  .ride .bar{background:var(--c)}
+  .ride .body{padding:10px 0 10px}
+  .ride .name{font-weight:600;line-height:1.25}
+  .ride .note{color:var(--muted);font-size:.9rem;margin-top:2px;line-height:1.35}
+  .tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+  .tag{font-size:.72rem;font-weight:700;padding:2px 7px;border-radius:5px;background:#f0ebe3;color:#3a342f}
+  .tag.ll{background:#dbeeff;color:#0b3f8a}
+  .tag.t1{background:#0b3f8a;color:#fff}
+  .tag.sp{background:#3a1d6e;color:#fff}
+  .tag.h{background:#ffe6c7;color:#7a4300}
+  .tag.type{background:transparent;border:1px solid var(--line);color:var(--muted);font-weight:500}
+  .ride .side{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:8px 12px 8px 0}
+  .ride label{display:flex;align-items:center;cursor:pointer}
+  .ride .map{font-size:.72rem;font-weight:700;color:var(--tomorrow);text-decoration:none;border:1.5px solid var(--tomorrow);border-radius:6px;padding:3px 8px}
+  .ride input{width:24px;height:24px;accent-color:#3a342f;margin:0}
+  .ride.done .name{text-decoration:line-through;color:var(--muted)}
+  .ride.done{opacity:.6}
+  .empty{color:var(--muted);text-align:center;padding:30px 0}
+  .extras{margin-top:26px;padding-top:14px;border-top:1px solid var(--line);font-size:.95rem;line-height:1.5}
+  .extras p{margin:6px 0}
+  .key{font-size:.8rem;color:var(--muted);margin-top:14px;line-height:1.6}
+  .key .tag{font-size:.7rem}
+  @media (prefers-reduced-motion:no-preference){.ride{transition:opacity .15s}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Magic Kingdom <small>Tap a land to filter. Check off rides as you go.</small></h1>
+  <input id="q" type="search" placeholder="Search rides" autocomplete="off" autocorrect="off" spellcheck="false" aria-label="Search rides">
+  <div class="row" id="lands"></div>
+  <div class="row" id="types"></div>
+  <div class="tools">
+    <span id="count"></span>
+    <button id="grp">Group by ride type</button>
+  </div>
+</header>
+<main>
+  <div id="list"></div>
+  <div class="extras">
+    <p><strong>Lunch:</strong> Columbia Harbour House (salmon or shrimp). Liberty Square.</p>
+    <p><strong>Characters:</strong> check My Disney Experience for times and spots, some have LL. Mickey is at Town Square Theater on Main St.</p>
+    <p><strong>Lightning Lane:</strong> Multi Pass = pick 3 in advance, add another after you use one. Tier 1 rides are one per day. Seven Dwarfs and TRON are Single Pass, paid separately, max 2 a day.</p>
+    <p><strong>Rider Switch:</strong> on any height-req ride, ask a cast member at the entrance. One of you rides, then you swap without re-queuing.</p>
+    <p><strong>Baby Care Center:</strong> Main St, next to the Crystal Palace. Changing, nursing, quiet room.</p>
+    <p><strong>Park map:</strong> <a href="https://disneyworld.disney.go.com/maps/magic-kingdom/" target="_blank" rel="noopener">Disney's live map</a> (opens in the app if installed).</p>
+    <p><strong>Closed:</strong> Liberty Square Riverboat and Tom Sawyer Island (gone for good), Carousel of Progress (refurb).</p>
+    <div class="key">
+      <span class="tag ll">LL</span> Lightning Lane &nbsp;
+      <span class="tag t1">Tier 1</span> top-tier LL, one per day &nbsp;
+      <span class="tag sp">Single Pass</span> paid separately &nbsp;
+      <span class="tag h">40in</span> height rule
+    </div>
+  </div>
+</main>
+<script>
+const LANDS = {
+  fantasy:  {name:'Fantasyland',    c:'var(--fantasy)'},
+  tomorrow: {name:'Tomorrowland',   c:'var(--tomorrow)'},
+  adventure:{name:'Adventureland',  c:'var(--adventure)'},
+  liberty:  {name:'Liberty Square', c:'var(--liberty)'},
+  frontier: {name:'Frontierland',   c:'var(--frontier)'},
+  mainst:   {name:'Main St USA',    c:'var(--mainst)'},
+};
+const TYPES = {
+  dark:'Dark rides', spin:'Carousels / aerial', tour:'Train / boat / car', play:'Play areas', thrill:'Height req.', show:'Shows / AC breaks'
+};
+// flags: ll, t1 (tier 1), star (bold in doc = LL priority), h (height in)
+const RIDES = [
+  {n:"Peter Pan's Flight", u:"peter-pans-flight", l:'fantasy', t:'dark', note:'Dark ride in a flying ship', ll:1, t1:1},
+  {n:"The Many Adventures of Winnie the Pooh", u:"many-adventures-of-winnie-the-pooh", l:'fantasy', t:'dark', note:'Dark ride, nothing scary', ll:1, star:1},
+  {n:"it's a small world", u:"its-a-small-world", l:'fantasy', t:'dark', note:'', ll:1},
+  {n:"Under the Sea: Journey of the Little Mermaid", u:"under-the-sea-journey-of-the-little-mermaid", l:'fantasy', t:'dark', note:'Dark ride on a shell. Less popular', ll:1},
+  {n:"Haunted Mansion", u:"haunted-mansion", l:'liberty', t:'dark', note:'', ll:1},
+  {n:"Buzz Lightyear Space Ranger Spin", u:"buzz-lightyear-space-ranger-spin", l:'tomorrow', t:'dark', note:'Laser game. Too young?', ll:1, star:1},
+  {n:"Pirates of the Caribbean", u:"pirates-of-the-caribbean", l:'adventure', t:'dark', note:'Some dark parts and explosions', ll:1},
+  {n:"Dumbo the Flying Elephant", u:"dumbo-the-flying-elephant", l:'fantasy', t:'spin', note:'', ll:1},
+  {n:"Prince Charming Regal Carrousel", u:"prince-charming-regal-carrousel", l:'fantasy', t:'spin', note:'No wait early in the day. No LL'},
+  {n:"Mad Tea Party", u:"mad-tea-party", l:'fantasy', t:'spin', note:'Spinning teacups', ll:1},
+  {n:"Astro Orbiter", u:"astro-orbiter", l:'tomorrow', t:'spin', note:'Faster, longer wait. No LL'},
+  {n:"Magic Carpets of Aladdin", u:"magic-carpets-of-aladdin", l:'adventure', t:'spin', note:'', ll:1},
+  {n:"Walt Disney World Railroad", u:"walt-disney-world-railroad", l:'mainst', t:'tour', note:'Shuttle only right now: Main St to Fantasyland and back. No Frontierland stop'},
+  {n:"Tomorrowland Transit Authority PeopleMover", u:"tomorrowland-transit-authority-peoplemover", l:'tomorrow', t:'tour', note:'10 minute tour, relaxing, scenic views'},
+  {n:"Tomorrowland Speedway", u:"tomorrowland-speedway", l:'tomorrow', t:'tour', note:'32in to ride, 54in to drive alone', h:32, ll:1, star:1},
+  {n:"Jungle Cruise", u:"jungle-cruise", l:'adventure', t:'tour', note:'Boat tour through the safari', ll:1, t1:1},
+  {n:"Main Street Vehicles", u:"main-street-vehicles", l:'mainst', t:'tour', note:'Up and down Main St, little or no wait'},
+  {n:"Dumbo indoor play area", u:"dumbo-the-flying-elephant", l:'fantasy', t:'play', note:''},
+  {n:"Casey Jr. Splash 'N' Soak Station", u:"casey-jr-splash-n-soak-station", l:'fantasy', t:'play', note:'Splash pad'},
+  {n:"Swiss Family Treehouse", u:"swiss-family-treehouse", l:'adventure', t:'play', note:'Little or no wait. Has stairs'},
+  {n:"Seven Dwarfs Mine Train", u:"seven-dwarfs-mine-train", l:'fantasy', t:'thrill', note:'Rider Switch', h:38, sp:1},
+  {n:"The Barnstormer", u:"the-barnstormer", l:'fantasy', t:'thrill', note:'Kid coaster', h:35, ll:1},
+  {n:"TRON Lightcycle / Run", u:"tron-lightcycle-run", l:'tomorrow', t:'thrill', note:'Rider Switch', h:48, sp:1},
+  {n:"Space Mountain", u:"space-mountain", l:'tomorrow', t:'thrill', note:'Rider Switch', h:44, ll:1, t1:1},
+  {n:"Big Thunder Mountain Railroad", u:"big-thunder-mountain-railroad", l:'frontier', t:'thrill', note:'Reopened May 2026. Rider Switch', h:38, ll:1, t1:1},
+  {n:"Tiana's Bayou Adventure", u:"tianas-bayou-adventure", l:'frontier', t:'thrill', note:'Log flume, you will get wet. Rider Switch', h:40, ll:1, t1:1},
+  {n:"Mickey's PhilharMagic", u:"mickeys-philharmagic", l:'fantasy', t:'show', note:'3D show, air conditioned, good break', ll:1},
+  {n:"Enchanted Tiki Room", u:"enchanted-tiki-room", l:'adventure', t:'show', note:'Singing birds, air conditioned, short wait'},
+  {n:"Country Bear Musical Jamboree", u:"country-bear-musical-jamboree", l:'frontier', t:'show', note:'Short, silly, air conditioned'},
+];
+
+let land = null, type = null, byType = false, q = '', llOnly = false;
+document.getElementById('q').addEventListener('input', e=>{ q = e.target.value.trim().toLowerCase(); render(); });
+const done = new Set();
+
+function chip(id, label, color, cls, on){
+  const b = document.createElement('button');
+  b.className = 'chip' + (cls ? ' '+cls : '');
+  b.textContent = label; b.dataset.id = id;
+  if (color) b.style.setProperty('--c', color);
+  b.setAttribute('aria-pressed', 'false');
+  b.onclick = on; return b;
+}
+const landsEl = document.getElementById('lands'), typesEl = document.getElementById('types');
+landsEl.appendChild(chip('', 'All lands', null, '', ()=>{land=null;render();}));
+for (const [k,v] of Object.entries(LANDS)) landsEl.appendChild(chip(k, v.name, v.c, '', ()=>{land = land===k?null:k; render();}));
+typesEl.appendChild(chip('', 'All types', null, 'type', ()=>{type=null;render();}));
+for (const [k,v] of Object.entries(TYPES)) typesEl.appendChild(chip(k, v, null, 'type', ()=>{type = type===k?null:k; render();}));
+const llChip = chip('ll', 'Lightning Lane', '#0b3f8a', 'll', ()=>{llOnly=!llOnly; render();});
+typesEl.appendChild(llChip);
+document.getElementById('grp').onclick = ()=>{byType=!byType;render();};
+
+function tagHtml(r){
+  const t=[];
+  if (r.sp) t.push('<span class="tag sp">Single Pass</span>');
+  else if (r.t1) t.push('<span class="tag t1">Tier 1 LL</span>');
+  else if (r.ll) t.push('<span class="tag ll">LL' + (r.star?' pick':'') + '</span>');
+  if (r.h) t.push(`<span class="tag h">${r.h}in</span>`);
+  t.push(`<span class="tag type">${byType ? LANDS[r.l].name : TYPES[r.t]}</span>`);
+  return `<div class="tags">${t.join('')}</div>`;
+}
+function rideHtml(r,i){
+  return `<div class="ride${done.has(i)?' done':''}" style="--c:${LANDS[r.l].c}">
+    <div class="bar"></div>
+    <div class="body"><div class="name">${r.n}</div>${r.note?`<div class="note">${r.note}</div>`:''}${tagHtml(r)}</div>
+    <div class="side"><a class="map" href="https://disneyworld.disney.go.com/attractions/magic-kingdom/${r.u}/" target="_blank" rel="noopener" aria-label="Open ${r.n} in Disney map">Map</a><label><input type="checkbox" data-i="${i}" ${done.has(i)?'checked':''} aria-label="Done: ${r.n}"></label></div>
+  </div>`;
+}
+function render(){
+  for (const b of landsEl.children) b.setAttribute('aria-pressed', String((b.dataset.id||null)===land));
+  for (const b of typesEl.children) if (b!==llChip) b.setAttribute('aria-pressed', String((b.dataset.id||null)===type));
+  llChip.setAttribute('aria-pressed', String(llOnly));
+  document.getElementById('grp').textContent = byType ? 'Group by land' : 'Group by ride type';
+  const items = RIDES.map((r,i)=>({r,i})).filter(({r})=>(!land||r.l===land)&&(!type||r.t===type)&&(!llOnly||r.ll||r.sp)
+    &&(!q||(r.n+' '+r.note+' '+LANDS[r.l].name+' '+TYPES[r.t]).toLowerCase().includes(q)));
+  const groups = byType ? TYPES : Object.fromEntries(Object.entries(LANDS).map(([k,v])=>[k,v.name]));
+  let html='';
+  for (const [k,label] of Object.entries(groups)){
+    const g = items.filter(({r})=> byType ? r.t===k : r.l===k);
+    if (!g.length) continue;
+    const dot = byType ? '' : `<span class="dot" style="--c:${LANDS[k].c}"></span>`;
+    html += `<section><h2>${dot}${label} <span class="n">${g.length}</span></h2>${g.map(({r,i})=>rideHtml(r,i)).join('')}</section>`;
+  }
+  document.getElementById('list').innerHTML = html || '<p class="empty">Nothing matches those filters.</p>';
+  const d = items.filter(({i})=>done.has(i)).length;
+  document.getElementById('count').textContent = `${items.length} rides, ${d} done`;
+  document.querySelectorAll('.ride input').forEach(cb=>cb.onchange = e=>{
+    const i=+e.target.dataset.i; e.target.checked?done.add(i):done.delete(i); render();
+  });
+}
+render();
+</script>
+</body>
+</html>
